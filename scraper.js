@@ -1,9 +1,114 @@
 const ExcelJS = require("exceljs");
 
-const scrapeCategory = async (browser, url) =>
+const scrapeCategory = async (browser, url, urlCompany) =>
   new Promise(async (resolve, reject) => {
     try {
-      const arrayA = [];
+      if (urlCompany) {
+        const arrayA = [];
+        let newPage = await browser.newPage();
+        await newPage.waitForTimeout(2000);
+        await newPage.goto(`https://asp.misa.vn//${urlCompany}`);
+
+        await newPage.waitForTimeout(5000);
+
+        await newPage.waitForSelector(".profile-detail");
+
+        const id = await newPage.$$eval(".profile-detail", (el) =>
+          el.map((x) => x.getAttribute("id"))
+        );
+
+        const nameCompany = await newPage.evaluate(
+          (idxParams) => {
+            return document.querySelector(
+              `#${idxParams.idx} > div.profile-container.container > div.header-section > div.left-side > div.name-box > p`
+            ) !== null
+              ? document.querySelector(
+                  `#${idxParams.idx} > div.profile-container.container > div.header-section > div.left-side > div.name-box > p`
+                ).innerText
+              : "";
+          },
+          { idx: id[0] }
+        );
+
+        const address = await newPage.evaluate(
+          (idxParams) => {
+            return document.querySelector(
+              `#${idxParams.idx} > div.profile-container.container > div.header-section > div.left-side > div.name-box > div.p-address`
+            ) !== null
+              ? document.querySelector(
+                  `#${idxParams.idx} > div.profile-container.container > div.header-section > div.left-side > div.name-box > div.p-address`
+                ).innerText
+              : "";
+          },
+          { idx: id[0] }
+        );
+
+        const phone = await newPage.evaluate(
+          (idxParams) => {
+            return document.querySelector(
+              `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-phoneno`
+            ) !== null
+              ? document.querySelector(
+                  `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-phoneno`
+                ).innerText
+              : "";
+          },
+          { idx: id[0] }
+        );
+
+        const email = await newPage.evaluate(
+          (idxParams) => {
+            return document.querySelector(
+              `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-email`
+            )
+              ? document.querySelector(
+                  `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-email`
+                ).innerText
+              : "";
+          },
+          { idx: id[0] }
+        );
+
+        const website = await newPage.evaluate(
+          (idxParams) => {
+            return document.querySelector(
+              `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-website`
+            ) !== null
+              ? document.querySelector(
+                  `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-website`
+                ).innerText
+              : "";
+          },
+          { idx: id[0] }
+        );
+
+        const facebook = await newPage.evaluate(
+          (idxParams) => {
+            return document.querySelector(
+              `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-fanpage`
+            ) !== null
+              ? document.querySelector(
+                  `#${idxParams.idx} > div.profile-container.container > div.header-section > div.right-side > p.p-fanpage`
+                ).innerText
+              : "";
+          },
+          { idx: id[0] }
+        );
+
+        arrayA.push({
+          nameCompany: nameCompany,
+          address: address,
+          phone: phone,
+          email: email,
+          website: website,
+          facebook: facebook,
+        });
+        await newPage.waitForTimeout(2000);
+        await newPage.close();
+
+        return resolve(arrayA);
+      }
+      let infoCompany = [];
       let page = await browser.newPage();
       console.log(">> Mở tab mới...");
 
@@ -15,95 +120,51 @@ const scrapeCategory = async (browser, url) =>
       );
 
       await page.evaluate((pageItem) => pageItem.scrollIntoView(), ele);
-      await page.waitForTimeout(40000);
+      await page.waitForTimeout(500);
 
       const str = await page.evaluate(() => {
         return document.querySelector(
           `#td-outer-wrap > div.main-content > div > div.main-center > div.search-profile-component > div.m-container.advance-filter-box > p`
         ).innerText;
       });
+
       const strNum = str.split(" ");
       const numberString = strNum[1];
       const result = parseInt(numberString, 10);
+
+      const hrefs = await page.$$eval(
+        ".profile-list-data .profile-item-row a",
+        (el) => el.map((x) => x.getAttribute("href"))
+      );
+
+      console.log({ hrefs });
+
       console.log(result);
-      for (let i = 1; i < 4; i++) {
-        await page.click(
-          `#td-outer-wrap > div.main-content > div > div.main-center > div.search-profile-component > div.m-container.list-data-view.hasDialog > div.profile-list-data > div:nth-child(${i}) > a`
-        );
-        await page.waitForTimeout(5000);
-        const id = await page.evaluate(() => {
-          return document
-            .querySelectorAll(".profile-detail")[0]
-            .getAttribute("id");
-        });
-        console.log(id);
-
-        const nameCompany = await page.evaluate(() => {
-          return document.querySelector(
-            `div.header-section > div.left-side > div.name-box > p`
-          ).innerText;
-        });
-        console.log(nameCompany);
-
-        // const address = await page.evaluate(() => {
-        //   return document.querySelector(
-        //     `#profile-detail-233 > div.profile-container.container > div.header-section > div.left-side > div.name-box > div.p-address`
-        //   ).innerText;
-        // });
-        // console.log(address);
-
-        // const phone = await page.evaluate(() => {
-        //   return document.querySelector(
-        //     `#profile-detail-233 > div.profile-container.container > div.header-section > div.right-side > p.p-phoneno`
-        //   ).innerText;
-        // });
-        // console.log(phone);
-
-        // const email = await page.evaluate(() => {
-        //   return document.querySelector(
-        //     `#profile-detail-233 > div.profile-container.container > div.header-section > div.right-side > p.p-email`
-        //   ).innerText;
-        // });
-        // console.log(email);
-
-        // const webiste = await page.evaluate(() => {
-        //   return document.querySelector(
-        //     `#profile-detail-233 > div.profile-container.container > div.header-section > div.right-side > p.p-website`
-        //   ).innerText;
-        // });
-        // console.log(webiste);
-
-        // const facebook = await page.evaluate(() => {
-        //   return document.querySelector(
-        //     `#profile-detail-233 > div.profile-container.container > div.header-section > div.right-side > p.p-fanpage`
-        //   ).innerText;
-        // });
-        // console.log(facebook);
-        await page.waitForTimeout(5000);
-        await page.goBack();
-        await page.waitForTimeout(5000);
+      for (let i = 0; i < hrefs.length; i++) {
+        const hrefCompany = hrefs[i].replace(/[.,\/#!$%\^&\*;:{}=\_`~()]/g, "");
+        const info = await scrapeCategory(browser, url, hrefCompany);
+        infoCompany.push(info);
       }
+      const in4 = infoCompany.flatMap((a1) => a1);
+      console.log(in4);
 
-      //   const workbook = new ExcelJS.Workbook();
-      //   const worksheet = workbook.addWorksheet("Sheet1");
-      //   worksheet.columns = [
-      //     { header: "Mã giao dịch", key: "tradingCode", width: 20 },
-      //     { header: "Tờ khai/Phụ lục", key: "declaration", width: 20 },
-      //     { header: "Kỳ tính thuế", key: "taxPeriod", width: 20 },
-      //     { header: "Loại tờ khai", key: "typeOfDeclaration", width: 20 },
-      //     { header: "Lần nộp", key: "numberOfSubmissions", width: 20 },
-      //     { header: "Lần bổ sung", key: "numberOfAdditions", width: 20 },
-      //     { header: "Ngày nộp", key: "dateOfApplication", width: 20 },
-      //     { header: "Nơi nộp", key: "placeOfSubmission", width: 20 },
-      //     { header: "Trạng thái", key: "status", width: 20 },
-      //   ];
-      //   arrayA.forEach((row) => {
-      //     worksheet.addRow(row);
-      //   });
-      //   workbook.xlsx.writeFile("data.xlsx").then(() => {
-      //     console.log("Đã xuất tệp Excel thành công");
-      //   });
-      //   resolve();
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet1");
+      worksheet.columns = [
+        { header: "Tên công ty", key: "nameCompany", width: 20 },
+        { header: "Địa chỉ", key: "address", width: 20 },
+        { header: "SĐT", key: "phone", width: 20 },
+        { header: "Email", key: "email", width: 20 },
+        { header: "Website", key: "website", width: 20 },
+        { header: "Fanpage", key: "facebook", width: 20 },
+      ];
+      in4.forEach((row) => {
+        worksheet.addRow(row);
+      });
+      workbook.xlsx.writeFile("data.xlsx").then(() => {
+        console.log("Đã xuất tệp Excel thành công");
+      });
+      resolve();
     } catch (error) {
       console.log("Lỗi ở scrape category: " + error);
       reject(error);
